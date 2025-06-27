@@ -6,6 +6,7 @@ import br.com.tiinforma.backend.domain.criador.CriadorResponseDto;
 import br.com.tiinforma.backend.domain.enums.Funcao;
 import br.com.tiinforma.backend.domain.inscricao.InscricaoRequestDto;
 import br.com.tiinforma.backend.domain.inscricao.Inscritos;
+import br.com.tiinforma.backend.domain.userDetails.UserDetailsImpl;
 import br.com.tiinforma.backend.domain.usuario.Usuario;
 import br.com.tiinforma.backend.domain.usuario.UsuarioCreateDto;
 import br.com.tiinforma.backend.exceptions.ResourceNotFoundException;
@@ -13,8 +14,10 @@ import br.com.tiinforma.backend.repositories.CriadorRepository;
 import br.com.tiinforma.backend.repositories.InscritosRepository;
 import br.com.tiinforma.backend.repositories.UsuarioRepository;
 import br.com.tiinforma.backend.services.interfaces.CriadorService;
+import jakarta.persistence.EntityNotFoundException;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -148,6 +151,18 @@ public class CriadorImpl implements CriadorService {
     @Override
     public Integer getTotalInscritos(Long criadorId) {
         return inscritosRepository.countByCriadorId(criadorId);
+    }
+
+    @Transactional
+    public void atualizarFotoUrl(String email, String fotoUrl) {
+        Criador criador = criadorRepository.findByEmail(email)
+                .orElseThrow(() -> new EntityNotFoundException("Criador não encontrado"));
+
+
+        criador.getUsuario().setFotoUrl(fotoUrl);
+        criador.setFotoUrl(fotoUrl);
+
+        criadorRepository.save(criador);
     }
 
 }

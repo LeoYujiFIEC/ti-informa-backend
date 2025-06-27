@@ -1,6 +1,7 @@
 package br.com.tiinforma.backend.repositories;
 
 import br.com.tiinforma.backend.domain.criador.Criador;
+import br.com.tiinforma.backend.domain.usuario.Usuario;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -18,4 +19,6 @@ public interface CriadorRepository extends JpaRepository<Criador, Long> {
     boolean existsByCpf(String cpf);
     boolean existsByEmailAndStatusSolicitacao(String email, String status);
     boolean existsByCpfAndIdNot(String cpf, Long id);
+
+    boolean existsByUsuarioEmail(String email);
 }

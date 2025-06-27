@@ -152,7 +152,8 @@ public class PlaylistController {
                                             video.getCriador().getEmail(),
                                             video.getCriador().getFormacao(),
                                             video.getCriador().getFuncao(),
-                                            video.getCriador().getTotalInscritos()
+                                            video.getCriador().getTotalInscritos(),
+                                            video.getCriador().getFotoUrl()
                                     ) : null
                     );
                 })
@@ -232,7 +233,8 @@ public class PlaylistController {
                                                 video.getCriador().getEmail(),
                                                 video.getCriador().getFormacao(),
                                                 video.getCriador().getFuncao(),
-                                                video.getCriador().getTotalInscritos()
+                                                video.getCriador().getTotalInscritos(),
+                                                video.getCriador().getFotoUrl()
                                         ) : null
                         );
                     })
@@ -323,7 +325,8 @@ public class PlaylistController {
                                                     v.getCriador().getEmail(),
                                                     v.getCriador().getFormacao(),
                                                     v.getCriador().getFuncao(),
-                                                    v.getCriador().getTotalInscritos()
+                                                    v.getCriador().getTotalInscritos(),
+                                                    v.getCriador().getFotoUrl()
                                             ) : null
                             );
                         })
@@ -384,7 +387,8 @@ public class PlaylistController {
                                                         video.getCriador().getEmail(),
                                                         video.getCriador().getFormacao(),
                                                         video.getCriador().getFuncao(),
-                                                        video.getCriador().getTotalInscritos()
+                                                        video.getCriador().getTotalInscritos(),
+                                                        video.getCriador().getFotoUrl()
                                                 ) : null
                                 );
                             })
@@ -462,7 +466,8 @@ public class PlaylistController {
                                 video.getCriador().getEmail(),
                                 video.getCriador().getFormacao(),
                                 video.getCriador().getFuncao(),
-                                video.getCriador().getTotalInscritos()
+                                video.getCriador().getTotalInscritos(),
+                                video.getCriador().getFotoUrl()
                         ) : null
         );
     }

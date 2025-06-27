@@ -13,6 +13,7 @@ import br.com.tiinforma.backend.exceptions.ResourceNotFoundException;
 import br.com.tiinforma.backend.repositories.CriadorRepository;
 import br.com.tiinforma.backend.repositories.UsuarioRepository;
 import br.com.tiinforma.backend.services.interfaces.UsuarioService;
+import jakarta.persistence.EntityNotFoundException;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -117,18 +118,22 @@ public class UsuarioImpl implements UsuarioService {
     @Override
     public ResponseEntity<?> solicitarCriador(CriadorCreateDto criadorDto, UserDetailsImpl userDetails) {
         try {
-            if (criadorRepository.findByEmail(userDetails.getUsername()).isPresent()) {
+            if (criadorRepository.existsByEmailAndStatusSolicitacao(userDetails.getUsername(), "PENDENTE")) {
                 return ResponseEntity.badRequest().body("Já existe uma solicitação pendente para este e-mail");
             }
+
+            Usuario usuario = usuarioRepository.findByEmail(userDetails.getUsername())
+                    .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado"));
 
             Criador solicitacao = Criador.builder()
                     .nome(criadorDto.getNome())
                     .email(userDetails.getUsername())
                     .cpf(criadorDto.getCpf())
                     .formacao(criadorDto.getFormacao())
-                    .senha(userDetails.getPassword())
+                    .senha(passwordEncoder.encode(criadorDto.getSenha()))
                     .funcao(Funcao.USUARIO)
                     .statusSolicitacao("PENDENTE")
+                    .usuario(usuario)
                     .build();
 
             criadorRepository.save(solicitacao);
@@ -167,14 +172,21 @@ public class UsuarioImpl implements UsuarioService {
         }
 
         Criador criador = criadorOpt.get();
+
+        Optional<Usuario> usuarioOpt = usuarioRepository.findByEmail(criador.getEmail());
+        if (usuarioOpt.isEmpty()) {
+            return ResponseEntity.badRequest().body("Usuário não encontrado para o email: " + criador.getEmail());
+        }
+
+        Usuario usuario = usuarioOpt.get();
+
+        usuario.setFuncao(Funcao.CRIADOR);
+        usuario = usuarioRepository.save(usuario);
+
+        criador.setUsuario(usuario);
         criador.setFuncao(Funcao.CRIADOR);
         criador.setStatusSolicitacao("APROVADO");
         criadorRepository.save(criador);
-
-        usuarioRepository.findByEmail(criador.getEmail()).ifPresent(usuario -> {
-            usuario.setFuncao(Funcao.CRIADOR);
-            usuarioRepository.save(usuario);
-        });
 
         return ResponseEntity.ok("Criador aprovado com sucesso!");
     }
@@ -203,6 +215,14 @@ public class UsuarioImpl implements UsuarioService {
         Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado: " + id));
         usuario.setDescricao(descricao);
+        usuarioRepository.save(usuario);
+    }
+
+    public void atualizarFotoUrl(String email, String fotoUrl) {
+        Usuario usuario = usuarioRepository.findByEmail(email)
+                .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado"));
+
+        usuario.setFotoUrl(fotoUrl);
         usuarioRepository.save(usuario);
     }
 

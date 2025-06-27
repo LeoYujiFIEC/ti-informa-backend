@@ -45,6 +45,7 @@ public class Criador implements Serializable, FotoAtualizavel {
 
     private Funcao funcao = Funcao.CRIADOR;
 
+    @Column(name = "foto_url")
     private String fotoUrl;
 
     @OneToOne
