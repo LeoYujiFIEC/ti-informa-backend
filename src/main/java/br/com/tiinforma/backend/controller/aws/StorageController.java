@@ -14,15 +14,21 @@ import br.com.tiinforma.backend.repositories.PlaylistVideoRepository;
 import br.com.tiinforma.backend.repositories.UsuarioRepository;
 import br.com.tiinforma.backend.repositories.VideoRepository;
 import br.com.tiinforma.backend.services.aws.StorageService;
+import br.com.tiinforma.backend.services.implementations.CriadorImpl;
+import br.com.tiinforma.backend.services.implementations.UsuarioImpl;
+import br.com.tiinforma.backend.services.interfaces.CriadorService;
+import br.com.tiinforma.backend.services.interfaces.UsuarioService;
 import br.com.tiinforma.backend.services.interfaces.VideoService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.cloud.storage.StorageException;
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
+import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -66,6 +72,12 @@ public class StorageController {
 
     @Autowired
     private ModelMapper modelMapper;
+
+    @Autowired
+    private UsuarioImpl usuarioImpl;
+
+    @Autowired
+    private CriadorImpl criadorImpl;
 
     @PostMapping("/upload")
     public ResponseEntity<String> uploadVideo(
@@ -144,7 +156,8 @@ public class StorageController {
                         video.getCriador().getEmail(),
                         video.getCriador().getFormacao(),
                         video.getCriador().getFuncao(),
-                        video.getCriador().getTotalInscritos()
+                        video.getCriador().getTotalInscritos(),
+                        video.getCriador().getFotoUrl()
                 )
         );
     }
@@ -315,7 +328,8 @@ public class StorageController {
                         video.getCriador().getEmail(),
                         video.getCriador().getFormacao(),
                         video.getCriador().getFuncao(),
-                        video.getCriador().getTotalInscritos()
+                        video.getCriador().getTotalInscritos(),
+                        video.getCriador().getFotoUrl()
                 )
         );
     }
@@ -485,10 +499,10 @@ public class StorageController {
     }
 
     @PostMapping("/foto-upload")
-    public ResponseEntity<String> uploadFotoUsuario(
+    public ResponseEntity<?> uploadFotoUsuario(
             @RequestParam("file") MultipartFile file,
-            @AuthenticationPrincipal UserDetailsImpl userDetails
-    ) {
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
+
         try {
             if (file.isEmpty()) {
                 return ResponseEntity.badRequest().body("Arquivo não pode estar vazio");
@@ -498,11 +512,33 @@ public class StorageController {
                 return ResponseEntity.badRequest().body("Apenas arquivos de imagem são permitidos");
             }
 
-            String response = storageService.uploadFotoUsuario(file, userDetails.getUsername());
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
+            String fotoUrl = storageService.uploadFotoUsuario(file, userDetails.getUsername());
+
+            usuarioImpl.atualizarFotoUrl(userDetails.getUsername(), fotoUrl);
+
+            if (userDetails.getFuncao() == Funcao.CRIADOR) {
+                criadorImpl.atualizarFotoUrl(userDetails.getUsername(), fotoUrl);
+            }
+
+            return ResponseEntity.ok().body(Map.of(
+                    "fotoUrl", fotoUrl,
+                    "message", "Upload da foto realizado com sucesso"
+            ));
+
+        } catch (StorageException e) {
+            log.error("Erro no storage durante upload: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Erro ao fazer upload da foto: " + e.getMessage());
+                    .body("Erro ao armazenar a foto: " + e.getMessage());
+
+        } catch (DataAccessException e) {
+            log.error("Erro de banco de dados durante atualização: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Erro ao atualizar os registros: " + e.getMessage());
+
+        } catch (Exception e) {
+            log.error("Erro inesperado durante upload de foto: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Erro ao processar a foto: " + e.getMessage());
         }
     }
 
